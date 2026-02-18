@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Forgot Password</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(to right, #203a43, #2c5364);
+            display: flex;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 300px;
+            text-align: center;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        button {
+            background: #2c5364;
+            color: white;
+            border: none;
+        }
+        .msg {
+            margin-top: 10px;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Reset Password</h2>
+        <form method="post">
+            <input name="email" placeholder="Email" required>
+            <input name="password" type="password" placeholder="New Password" required>
+            <button type="submit">Update Password</button>
+        </form>
+
+        {% if message %}
+        <div class="msg">{{ message }}</div>
+        {% endif %}
+
+        <p><a href="/">Back to Login</a></p>
+    </div>
+</body>
+</html>

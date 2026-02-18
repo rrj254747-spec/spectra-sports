@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .invoice {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #2c5364;
+        }
+
+        .details, .items {
+            margin-top: 15px;
+        }
+
+        .items table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .items th, .items td {
+            border-bottom: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .total {
+            text-align: right;
+            font-size: 18px;
+            margin-top: 15px;
+        }
+
+        .points {
+            margin-top: 10px;
+            font-weight: bold;
+            color: green;
+            text-align: center;
+        }
+
+        .offer {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #d35400;
+            text-align: center;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: gray;
+        }
+
+        .print-btn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: #2c5364;
+            color: white;
+            border: none;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        @media print {
+            .print-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="invoice">
+        <div class="header">
+            <h1>Spectra Sports</h1>
+            <p>Your Complete Sports Store</p>
+        </div>
+
+        <div class="details">
+            <p><b>Date:</b> {{ date }}</p>
+            <p><b>Customer Name:</b> {{ name }}</p>
+            <p><b>Customer Phone:</b> {{ phone }}</p>
+        </div>
+
+        <div class="items">
+            <table>
+                <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th>Qty</th>
+                    <th>Total</th>
+                </tr>
+
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.category }}</td>
+                    <td>{{ item.qty }}</td>
+                    <td>₹{{ item.total }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="total">
+            <b>Grand Total: ₹{{ total }}</b>
+        </div>
+
+        <div class="points">
+            Points Earned: {{ "%.2f"|format(points) }}
+        </div>
+
+        {% if offer %}
+        <div class="offer">
+            {{ offer }}
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            Thank you for shopping with Spectra Sports!
+        </div>
+
+        <button class="print-btn" onclick="window.print()">Print Bill</button>
+    </div>
+</body>
+</html>

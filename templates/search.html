@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Customer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial; background:#f4f6f8; margin:0; }
+        .navbar { background:#2c5364; color:white; padding:15px; text-align:center; font-size:22px; }
+        .container { padding:20px; }
+        .card { background:white; padding:20px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
+        input, button {
+            width:100%; padding:10px; margin-top:10px;
+            border-radius:6px; border:1px solid #ccc;
+        }
+        button { background:#2c5364; color:white; border:none; }
+    </style>
+</head>
+<body>
+    <div class="navbar">Spectra Sports</div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Search Customer</h2>
+            <form method="post">
+                <input name="phone" placeholder="Phone number">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+
+        {% if data %}
+        <div class="card">
+            <h3>Customer Details</h3>
+            <p><b>Name:</b> {{ data[1] }}</p>
+            <p><b>Phone:</b> {{ data[3] }}</p>
+            <p><b>Address:</b> {{ data[2] }}</p>
+            <p><b>DOB:</b> {{ data[4] }}</p>
+            <p><b>Anniversary:</b> {{ data[5] }}</p>
+            <p><b>Interests:</b> {{ data[6] }}</p>
+            <p><b>Points:</b> {{ data[7] }}</p>
+        </div>
+        {% endif %}
+    <

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Staff</title>
+    <style>
+        body { font-family: Arial; background:#f4f6f8; }
+        .card { width:300px; margin:80px auto; background:white; padding:20px; border-radius:8px; }
+        input, select, button { width:100%; padding:10px; margin-top:10px; }
+        button { background:#2c5364; color:white; border:none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Add Staff</h2>
+        <form method="post">
+            <input name="username" placeholder="Username" required>
+            <input name="password" placeholder="Password" required>
+            <select name="role">
+                <option value="staff">Staff</option>
+                <option value="owner">Owner</option>
+            </select>
+            <button type="submit">Add Staff</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial; background:#f4f6f8; margin:0; }
+        .navbar { background:#2c5364; color:white; padding:15px; text-align:center; font-size:22px; }
+        .container { padding:20px; }
+        .card { background:white; padding:20px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
+        table { width:100%; border-collapse:collapse; }
+        th, td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
+        a.button {
+            display:inline-block;
+            padding:10px 15px;
+            background:#2c5364;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+            margin-bottom:15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">Spectra Sports Products</div>
+
+    <div class="container">
+        <div class="card">
+            <a class="button" href="/add_product">Add New Product</a>
+
+            <h2>Product List</h2>
+
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Brand</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+
+                {% for p in data %}
+                <tr>
+                    <td>{{ p[1] }}</td>
+                    <td>{{ p[2] }}</td>
+                    <td>{{ p[3] }}</td>
+                    <td>₹{{ p[4] }}</td>
+                    <td>{{ p[5] }}</td>
+                    <td><a href="/restock/{{ p[0] }}">Restock</a>
+                    </td>  
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</body>
+</html>

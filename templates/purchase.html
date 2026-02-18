@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spectra Sports POS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial; background:#f4f6f8; margin:0; }
+        .navbar { background:#2c5364; color:white; padding:15px; text-align:center; font-size:22px; }
+        .container { padding:20px; }
+
+        .card {
+            background:white;
+            padding:20px;
+            border-radius:10px;
+            box-shadow:0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom:15px;
+        }
+
+        select, input, button, a.button {
+            width:100%;
+            padding:10px;
+            margin-top:10px;
+            border-radius:6px;
+            border:1px solid #ccc;
+            font-size:16px;
+            text-align:center;
+            text-decoration:none;
+            display:block;
+        }
+
+        button, a.button {
+            background:#2c5364;
+            color:white;
+            border:none;
+        }
+
+        .top-actions {
+            display:flex;
+            gap:10px;
+        }
+
+        .top-actions a {
+            flex:1;
+        }
+
+        .item-row {
+            margin-bottom:15px;
+            padding:10px;
+            border:1px solid #ddd;
+            border-radius:6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">Spectra Sports POS</div>
+
+    <div class="container">
+
+        <!-- Top buttons -->
+        <div class="card">
+            <div class="top-actions">
+                <a class="button" href="/products">View Products</a>
+                <a class="button" href="/add_product">Add Product</a>
+            </div>
+        </div>
+
+        <!-- Billing section -->
+        <div class="card">
+            <h2>New Bill</h2>
+
+            <form method="post">
+                <input name="phone" placeholder="Customer Phone" required>
+
+                <!-- Item 1 -->
+                <div class="item-row">
+                    <select name="product">
+                        <option value="">Select Product</option>
+                        {% for p in products %}
+                        <option value="{{ p[0] }}">
+                            {{ p[1] }} - ₹{{ p[4] }} (Stock: {{ p[5] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <input name="quantity" placeholder="Quantity">
+                </div>
+
+                <!-- Item 2 -->
+                <div class="item-row">
+                    <select name="product">
+                        <option value="">Select Product</option>
+                        {% for p in products %}
+                        <option value="{{ p[0] }}">
+                            {{ p[1] }} - ₹{{ p[4] }} (Stock: {{ p[5] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <input name="quantity" placeholder="Quantity">
+                </div>
+
+                <!-- Item 3 -->
+                <div class="item-row">
+                    <select name="product">
+                        <option value="">Select Product</option>
+                        {% for p in products %}
+                        <option value="{{ p[0] }}">
+                            {{ p[1] }} - ₹{{ p[4] }} (Stock: {{ p[5] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <input name="quantity" placeholder="Quantity">
+                </div>
+
+                <button type="submit">Complete Bill</button>
+            </form>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spectra Sports POS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #f4f6f8;
+        }
+
+        .topbar {
+            background: #2c5364;
+            color: white;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            width: 220px;
+            background: #203a43;
+            color: white;
+            padding-top: 20px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 12px 20px;
+            text-decoration: none;
+        }
+
+        .sidebar a:hover {
+            background: #2c5364;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .button {
+            display: block;
+            text-align: center;
+            background: #2c5364;
+            color: white;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background: #203a43;
+        }
+
+
+        input, select {
+            padding: 8px;
+            width: 100%;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    Spectra Sports POS
+</div>
+
+<div class="container">
+    <div class="sidebar">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/purchase">New Bill</a>
+        <a href="/add_customer">Add Customer</a>
+        <a href="/search">Search Customer</a>
+        <a href="/products">Manage Products</a>
+    </div>
+
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+</body>
+</html>
