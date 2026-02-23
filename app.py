@@ -41,54 +41,97 @@ def init_db():
     conn = get_connection()
     c = conn.cursor()
 
-    # STAFF / USERS
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS staff (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE,
-        password TEXT,
-        role TEXT
-    )
-    """)
+    if os.environ.get("DATABASE_URL"):
+        # PostgreSQL syntax
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS staff (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE,
+            password TEXT,
+            role TEXT
+        )
+        """)
 
-    # PRODUCTS
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        price REAL,
-        stock INTEGER
-    )
-    """)
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            price REAL,
+            stock INTEGER
+        )
+        """)
 
-    # PURCHASES
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS purchases (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        total REAL,
-        date TEXT
-    )
-    """)
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS purchases (
+            id SERIAL PRIMARY KEY,
+            total REAL,
+            date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
 
-    # PURCHASE ITEMS
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS purchase_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        purchase_id INTEGER,
-        product_name TEXT,
-        quantity INTEGER,
-        price REAL
-    )
-    """)
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS purchase_items (
+            id SERIAL PRIMARY KEY,
+            purchase_id INTEGER,
+            product_name TEXT,
+            quantity INTEGER,
+            price REAL
+        )
+        """)
 
-    # FEEDBACK
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS feedback (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        message TEXT
-    )
-    """)
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS feedback (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            message TEXT
+        )
+        """)
+
+    else:
+        # SQLite syntax
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS staff (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE,
+            password TEXT,
+            role TEXT
+        )
+        """)
+
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            price REAL,
+            stock INTEGER
+        )
+        """)
+
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            total REAL,
+            date TEXT
+        )
+        """)
+
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS purchase_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            purchase_id INTEGER,
+            product_name TEXT,
+            quantity INTEGER,
+            price REAL
+        )
+        """)
+
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            message TEXT
+        )
+        """)
 
     conn.commit()
     conn.close()
