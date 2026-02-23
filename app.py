@@ -1,446 +1,394 @@
-from flask import Flask, render_template, request, redirect, session
+import os
 import sqlite3
-from datetime import datetime, timedelta
+import psycopg2
+from urllib.parse import urlparse
+from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = "spectra_secret"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-# ---------- DATABASE SETUP ----------
+
+# =========================
+# DATABASE CONNECTION
+# =========================
+def get_connection():
+    database_url = os.environ.get("DATABASE_URL")
+
+    # Production (Render PostgreSQL)
+    if database_url:
+        url = urlparse(database_url)
+        return psycopg2.connect(
+            dbname=url.path[1:],
+            user=url.username,
+            password=url.password,
+            host=url.hostname,
+            port=url.port
+        )
+
+    # Local (SQLite)
+    else:
+        conn = sqlite3.connect("spectra.db")
+        conn.row_factory = sqlite3.Row
+        return conn
+
+
+# =========================
+# INIT DATABASE
+# =========================
 def init_db():
-    conn = sqlite3.connect("spectra.db")
+    conn = get_connection()
     c = conn.cursor()
 
-    # Customers table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS customers(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            address TEXT,
-            phone TEXT UNIQUE,
-            dob TEXT,
-            anniversary TEXT,
-            interests TEXT,
-            points REAL DEFAULT 0
-        )
-    ''')
-
-    # Purchases table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS purchases(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            phone TEXT,
-            item TEXT,
-            category TEXT,
-            quantity INTEGER,
-            amount REAL,
-            date TEXT
-        )
-    ''')
-
-    # Products table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS products(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            category TEXT,
-            brand TEXT,
-            price REAL,
-            stock INTEGER
-        )
-    ''')
-
-    # Staff table (email-based login)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS staff(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE,
-            password TEXT,
-            role TEXT
-        )
-    ''')
-
-    # Default owner account
-    c.execute("SELECT * FROM staff WHERE email='owner@spectra.com'")
-    if not c.fetchone():
-        c.execute(
-        "INSERT INTO staff(email, password, role) VALUES (?, ?, ?)",
-        ("owner@spectra.com", generate_password_hash("1234"), "owner")
+    # STAFF / USERS
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS staff (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE,
+        password TEXT,
+        role TEXT
     )
+    """)
 
+    # PRODUCTS
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        price REAL,
+        stock INTEGER
+    )
+    """)
+
+    # PURCHASES
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS purchases (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        total REAL,
+        date TEXT
+    )
+    """)
+
+    # PURCHASE ITEMS
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS purchase_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        purchase_id INTEGER,
+        product_name TEXT,
+        quantity INTEGER,
+        price REAL
+    )
+    """)
+
+    # FEEDBACK
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        message TEXT
+    )
+    """)
 
     conn.commit()
     conn.close()
+
 
 init_db()
 
-# ---------- LOGIN (ENCRYPTED PASSWORD) ----------
+
+# =========================
+# LOGIN REQUIRED DECORATOR
+# =========================
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if "user" not in session:
+            return redirect("/")
+        return f(*args, **kwargs)
+    return wrapper
+
+
+# =========================
+# LOGIN
+# =========================
 @app.route("/", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
 
-        conn = sqlite3.connect("spectra.db")
+    if request.method == "POST":
+
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+
+        # Backend validation
+        if not email or not password:
+            flash("All fields are required", "error")
+            return redirect("/")
+
+        if "@" not in email:
+            flash("Invalid email format", "error")
+            return redirect("/")
+
+        conn = get_connection()
         c = conn.cursor()
 
-        # Get stored password hash and role
-        staff = c.execute(
-            "SELECT password, role FROM staff WHERE email=?",
-            (email,)
-        ).fetchone()
+        if os.environ.get("DATABASE_URL"):
+            c.execute("SELECT password FROM staff WHERE email=%s", (email,))
+        else:
+            c.execute("SELECT password FROM staff WHERE email=?", (email,))
 
+        user = c.fetchone()
         conn.close()
 
-        # Check encrypted password
-        if staff and check_password_hash(staff[0], password):
-            session["user"] = email
-            session["role"] = staff[1]
-            return redirect("/dashboard")
+        if not user:
+            flash("Account does not exist", "error")
+            return redirect("/")
+
+        if not check_password_hash(user[0], password):
+            flash("Incorrect password", "error")
+            return redirect("/")
+
+        session["user"] = email
+        flash("Login successful", "success")
+        return redirect("/dashboard")
 
     return render_template("login.html")
 
-# ---------- DASHBOARD ----------
-@app.route("/dashboard")
-def dashboard():
-    if "user" not in session:
-        return redirect("/")
-    return render_template("dashboard.html")
 
-# ---------- ADD CUSTOMER ----------
-@app.route("/add_customer", methods=["GET", "POST"])
-def add_customer():
+# =========================
+# SIGNUP
+# =========================
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+
     if request.method == "POST":
-        name = request.form["name"]
-        address = request.form["address"]
-        phone = request.form["phone"]
-        dob = request.form["dob"]
-        anniversary = request.form["anniversary"]
-        interests = request.form["interests"]
 
-        if len(phone) != 10 or not phone.isdigit():
-            return "Invalid phone number"
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+
+        # Backend validation
+        if not email or not password:
+            flash("All fields are required", "error")
+            return redirect("/signup")
+
+        if "@" not in email or "." not in email:
+            flash("Invalid email format", "error")
+            return redirect("/signup")
+
+        if len(password) < 6:
+            flash("Password must be at least 6 characters", "error")
+            return redirect("/signup")
+
+        if not any(char.isdigit() for char in password):
+            flash("Password must contain at least one number", "error")
+            return redirect("/signup")
+
+        hashed = generate_password_hash(password)
+
+        conn = get_connection()
+        c = conn.cursor()
 
         try:
-            conn = sqlite3.connect("spectra.db")
-            c = conn.cursor()
-            c.execute('''
-                INSERT INTO customers(name, address, phone, dob, anniversary, interests)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (name, address, phone, dob, anniversary, interests))
+            if os.environ.get("DATABASE_URL"):
+                c.execute(
+                    "INSERT INTO staff (email, password, role) VALUES (%s, %s, %s)",
+                    (email, hashed, "staff")
+                )
+            else:
+                c.execute(
+                    "INSERT INTO staff (email, password, role) VALUES (?, ?, ?)",
+                    (email, hashed, "staff")
+                )
+
             conn.commit()
-            conn.close()
+
         except:
-            return "Phone number already exists"
+            flash("Email already registered", "error")
+            conn.close()
+            return redirect("/signup")
 
-        return redirect("/dashboard")
-
-    return render_template("add_customer.html")
-
-# ---------- CHECK EVENT WEEK ----------
-def is_event_week(event_date):
-    if not event_date:
-        return False
-
-    today = datetime.today()
-    event = datetime.strptime(event_date, "%Y-%m-%d")
-
-    start = event - timedelta(days=7)
-    end = event
-
-    return start.date() <= today.date() <= end.date()
-
-# ---------- MULTI-ITEM PURCHASE (REAL POS WITH NAME) ----------
-@app.route("/purchase", methods=["GET", "POST"])
-def purchase():
-    conn = sqlite3.connect("spectra.db")
-    c = conn.cursor()
-
-    products = c.execute("SELECT * FROM products").fetchall()
-
-    if request.method == "POST":
-        phone = request.form["phone"]
-
-        product_ids = request.form.getlist("product")
-        quantities = request.form.getlist("quantity")
-
-        total_amount = 0
-        bill_items = []
-
-        # Get customer (with name)
-        customer = c.execute(
-            "SELECT name, points, dob, anniversary FROM customers WHERE phone=?",
-            (phone,)
-        ).fetchone()
-
-        if not customer:
-            return "Customer not found"
-
-        name, points, dob, anniversary = customer
-
-        # Offer message logic
-        offer_message = ""
-        if is_event_week(dob):
-            offer_message = "🎉 Happy Birthday! Special bonus points applied."
-        elif is_event_week(anniversary):
-            offer_message = "🎉 Happy Anniversary! Special bonus points applied."
-
-        for product_id, qty in zip(product_ids, quantities):
-            if not product_id or not qty:
-                continue
-
-            qty = int(qty)
-
-            if qty <= 0:
-                continue
-
-            product = c.execute(
-                "SELECT name, category, price, stock FROM products WHERE id=?",
-                (product_id,)
-            ).fetchone()
-
-            if not product:
-                continue
-
-            item_name, category, price, stock = product
-
-            if qty > stock:
-                return f"Not enough stock for {item_name}"
-
-            item_total = price * qty
-            total_amount += item_total
-
-            # Reduce stock
-            new_stock = stock - qty
-            c.execute(
-                "UPDATE products SET stock=? WHERE id=?",
-                (new_stock, product_id)
-            )
-
-            # Save purchase
-            c.execute('''
-                INSERT INTO purchases(phone, item, category, quantity, amount, date)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (phone, item_name, category, qty, item_total, datetime.today()))
-
-            bill_items.append({
-                "name": item_name,
-                "category": category,
-                "qty": qty,
-                "total": item_total
-            })
-
-        # Points calculation
-        earned_points = (total_amount / 10000) * 1.5
-
-        if is_event_week(dob) or is_event_week(anniversary):
-            earned_points *= 5
-
-        new_points = points + earned_points
-
-        c.execute(
-            "UPDATE customers SET points=? WHERE phone=?",
-            (new_points, phone)
-        )
-
-        conn.commit()
         conn.close()
+        flash("Account created successfully", "success")
+        return redirect("/")
 
-        return render_template(
-            "invoice.html",
-            name=name,
-            phone=phone,
-            items=bill_items,
-            total=total_amount,
-            points=earned_points,
-            date=datetime.now().strftime("%d-%m-%Y %H:%M"),
-            offer=offer_message
-        )
+    return render_template("signup.html")
 
-    conn.close()
-    return render_template("purchase.html", products=products)
 
-# ---------- REDEEM ----------
-@app.route("/redeem", methods=["POST"])
-def redeem():
-    phone = request.form["phone"]
-    redeem_points = float(request.form["points"])
+# =========================
+# LOGOUT
+# =========================
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
-    conn = sqlite3.connect("spectra.db")
+
+# =========================
+# DASHBOARD (Keep Old Design)
+# =========================
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    conn = get_connection()
     c = conn.cursor()
 
-    customer = c.execute(
-        "SELECT points FROM customers WHERE phone=?",
-        (phone,)
-    ).fetchone()
+    if os.environ.get("DATABASE_URL"):
+        c.execute("SELECT id, name, price, stock FROM products")
+    else:
+        c.execute("SELECT id, name, price, stock FROM products")
 
-    if not customer:
-        return "Customer not found"
+    products = c.fetchall()
+    conn.close()
 
-    current_points = customer[0]
+    return render_template("dashboard.html", products=products)
 
-    if current_points < 100:
-        return "Minimum 100 points required"
 
-    if redeem_points > current_points:
-        return "Not enough points"
+# =========================
+# ADD PRODUCT
+# =========================
+@app.route("/add_product", methods=["POST"])
+@login_required
+def add_product():
+    name = request.form["name"]
+    price = float(request.form["price"])
+    stock = int(request.form["stock"])
 
-    new_points = current_points - redeem_points
+    conn = get_connection()
+    c = conn.cursor()
 
-    c.execute(
-        "UPDATE customers SET points=? WHERE phone=?",
-        (new_points, phone)
-    )
+    if os.environ.get("DATABASE_URL"):
+        c.execute(
+            "INSERT INTO products (name, price, stock) VALUES (%s, %s, %s)",
+            (name, price, stock)
+        )
+    else:
+        c.execute(
+            "INSERT INTO products (name, price, stock) VALUES (?, ?, ?)",
+            (name, price, stock)
+        )
+
     conn.commit()
     conn.close()
 
-    return f"Redeemed {redeem_points} points"
-
-# ---------- SEARCH CUSTOMER ----------
-@app.route("/search", methods=["GET", "POST"])
-def search():
-    data = None
-    if request.method == "POST":
-        phone = request.form["phone"]
-        conn = sqlite3.connect("spectra.db")
-        c = conn.cursor()
-        data = c.execute(
-            "SELECT * FROM customers WHERE phone=?",
-            (phone,)
-        ).fetchone()
-        conn.close()
-
-    return render_template("search.html", data=data)
-
-# ---------- ADD PRODUCT ----------
-@app.route("/add_product", methods=["GET", "POST"])
-def add_product():
-    if request.method == "POST":
-        name = request.form["name"]
-        category = request.form["category"]
-        brand = request.form["brand"]
-        price = float(request.form["price"])
-        stock = int(request.form["stock"])
-
-        conn = sqlite3.connect("spectra.db")
-        c = conn.cursor()
-        c.execute('''
-            INSERT INTO products(name, category, brand, price, stock)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (name, category, brand, price, stock))
-        conn.commit()
-        conn.close()
-
-        return redirect("/products")
-
-    return render_template("add_product.html")
-
-# ---------- VIEW PRODUCTS ----------
-@app.route("/products")
-def products():
-    conn = sqlite3.connect("spectra.db")
-    c = conn.cursor()
-    data = c.execute("SELECT * FROM products").fetchall()
-    conn.close()
-    return render_template("products.html", data=data)
+    flash("Product added successfully")
+    return redirect("/dashboard")
 
 
-# ---------- RESTOCK PRODUCT ----------
-@app.route("/restock/<int:product_id>", methods=["GET", "POST"])
-def restock(product_id):
-    conn = sqlite3.connect("spectra.db")
+# =========================
+# PURCHASE (Dynamic Infinite Billing + No Duplicate + Price Support)
+# =========================
+@app.route("/purchase", methods=["POST"])
+@login_required
+def purchase():
+
+    products = request.form.getlist("product[]")
+    prices = request.form.getlist("price[]")
+    qtys = request.form.getlist("qty[]")
+    grand_total = request.form.get("grand_total")
+
+    selected = set()
+    total = 0
+
+    conn = get_connection()
     c = conn.cursor()
 
-    product = c.execute(
-        "SELECT * FROM products WHERE id=?",
-        (product_id,)
-    ).fetchone()
+    for i in range(len(products)):
 
-    if not product:
-        conn.close()
-        return "Product not found"
+        name = products[i]
+        qty = int(qtys[i])
+        price = float(prices[i])
 
-    if request.method == "POST":
-        add_stock = int(request.form["stock"])
-        new_stock = product[5] + add_stock
+        # Prevent duplicate product in same bill
+        if name in selected:
+            flash("Duplicate product in bill")
+            conn.close()
+            return redirect("/dashboard")
 
-        c.execute(
-            "UPDATE products SET stock=? WHERE id=?",
-            (new_stock, product_id)
-        )
+        selected.add(name)
 
-        conn.commit()
-        conn.close()
-        return redirect("/products")
+        # Check stock from database
+        if os.environ.get("DATABASE_URL"):
+            c.execute("SELECT stock FROM products WHERE name=%s", (name,))
+        else:
+            c.execute("SELECT stock FROM products WHERE name=?", (name,))
 
-    conn.close()
-    return render_template("restock.html", product=product)
+        product = c.fetchone()
 
-# ---------- ADD STAFF ----------
-@app.route("/add_staff", methods=["GET", "POST"])
-def add_staff():
-    if "user" not in session or session.get("role") != "owner":
-        return redirect("/dashboard")
+        if not product:
+            flash(f"Product {name} not found")
+            conn.close()
+            return redirect("/dashboard")
 
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        role = request.form["role"]
+        stock = product[0]
 
-        conn = sqlite3.connect("spectra.db")
-        c = conn.cursor()
+        if qty > stock:
+            flash(f"Not enough stock for {name}")
+            conn.close()
+            return redirect("/dashboard")
 
-        try:
+        # Calculate row total
+        row_total = price * qty
+        total += row_total
+
+        # Reduce stock
+        if os.environ.get("DATABASE_URL"):
             c.execute(
-                "INSERT INTO staff(username, password, role) VALUES (?, ?, ?)",
-                (username, password, role)
+                "UPDATE products SET stock = stock - %s WHERE name=%s",
+                (qty, name)
             )
-            conn.commit()
-        except:
-            conn.close()
-            return "Staff already exists"
+        else:
+            c.execute(
+                "UPDATE products SET stock = stock - ? WHERE name=?",
+                (qty, name)
+            )
 
-        conn.close()
-        return redirect("/dashboard")
-
-    return render_template("add_staff.html")
-
-# ---------- FORGOT PASSWORD ----------
-@app.route("/forgot", methods=["GET", "POST"])
-def forgot_password():
-    message = ""
-
-    if request.method == "POST":
-        email = request.form["email"]
-        new_password = request.form["password"]
-
-        conn = sqlite3.connect("spectra.db")
-        c = conn.cursor()
-
-        staff = c.execute(
-            "SELECT * FROM staff WHERE email=?",
-            (email,)
-        ).fetchone()
-
-        if not staff:
-            conn.close()
-            message = "Email not found"
-            return render_template("forgot.html", message=message)
-
-        hashed = generate_password_hash(new_password)
-
+    # Insert purchase summary
+    if os.environ.get("DATABASE_URL"):
         c.execute(
-            "UPDATE staff SET password=? WHERE email=?",
-            (hashed, email)
+            "INSERT INTO purchases (total, date) VALUES (%s, NOW())",
+            (total,)
+        )
+    else:
+        c.execute(
+            "INSERT INTO purchases (total, date) VALUES (?, datetime('now'))",
+            (total,)
         )
 
-        conn.commit()
-        conn.close()
+    conn.commit()
+    conn.close()
 
-        message = "Password updated successfully"
+    flash("Purchase completed successfully")
+    return redirect("/dashboard")
 
-    return render_template("forgot.html", message=message)
+# =========================
+# FEEDBACK
+# =========================
+@app.route("/feedback", methods=["POST"])
+@login_required
+def feedback():
+    name = request.form["name"]
+    message = request.form["message"]
 
-# ---------- RUN ----------
+    conn = get_connection()
+    c = conn.cursor()
+
+    if os.environ.get("DATABASE_URL"):
+        c.execute(
+            "INSERT INTO feedback (name, message) VALUES (%s, %s)",
+            (name, message)
+        )
+    else:
+        c.execute(
+            "INSERT INTO feedback (name, message) VALUES (?, ?)",
+            (name, message)
+        )
+
+    conn.commit()
+    conn.close()
+
+    flash("Feedback submitted")
+    return redirect("/dashboard")
+
+
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)

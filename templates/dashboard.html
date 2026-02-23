@@ -1,34 +1,57 @@
-{% extends "layout.html" %}
-
-{% block content %}
-
 <div class="card">
-    <h2>Welcome to Spectra Sports POS</h2>
-    <p>Select an option from the left menu.</p>
-</div>
+    <h2>Smart Billing</h2>
 
-<div class="card">
-    <h3>Quick Actions</h3>
+    <form method="POST" action="/purchase" id="billForm">
+        <div id="items"></div>
 
-    <a class="button" href="/add_staff">Add Staff</a>
-    <a class="button" href="/add_customer">Add Customer</a>
-    <a class="button" href="/purchase">New Purchase (POS)</a>
-    <a class="button" href="/search">Search Customer</a>
-    <a class="button" href="/products">Manage Products</a>
-</div>
+        <button type="button" onclick="addItem()">Add Item</button>
 
-<div class="card">
-    <h3>Redeem Points</h3>
+        <h3>Grand Total: ₹ <span id="grandTotal">0</span></h3>
 
-    <form action="/redeem" method="post">
-        <label>Phone</label>
-        <input name="phone" required>
-
-        <label>Points to Redeem</label>
-        <input name="points" required>
-
-        <button type="submit">Redeem</button>
+        <button type="submit">Complete Purchase</button>
     </form>
 </div>
+<div class="card">
+<h2>Analytics</h2>
+<p>Total Sales: ₹ {{ total_sales }}</p>
+<p>Total Users: {{ total_users }}</p>
+</div>
+<script>
+let products = {{ products|tojson }};
 
-{% endblock %}
+function addItem() {
+    const div = document.createElement("div");
+    div.className = "row";
+
+    let options = `<option value="">Select Product</option>`;
+    products.forEach(p => {
+        options += `<option value="${p[0]}" data-price="${p[2]}">${p[1]} (Stock: ${p[3]})</option>`;
+    });
+
+    div.innerHTML = `
+        <select name="product_id[]" onchange="calculateTotal()" required>
+            ${options}
+        </select>
+        <input type="number" name="quantity[]" min="1" value="1" onchange="calculateTotal()" required>
+        <button type="button" onclick="this.parentElement.remove(); calculateTotal()">X</button>
+    `;
+
+    document.getElementById("items").appendChild(div);
+}
+
+function calculateTotal() {
+    let total = 0;
+
+    document.querySelectorAll("#items .row").forEach(row => {
+        const select = row.querySelector("select");
+        const qty = row.querySelector("input");
+
+        if (select.selectedOptions[0]) {
+            const price = parseFloat(select.selectedOptions[0].dataset.price || 0);
+            total += price * parseInt(qty.value || 0);
+        }
+    });
+
+    document.getElementById("grandTotal").innerText = total.toFixed(2);
+}
+</script>

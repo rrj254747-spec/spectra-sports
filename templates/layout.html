@@ -1,105 +1,256 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Spectra Sports POS</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spectra Sports POS</title>
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial;
-            background: #f4f6f8;
-        }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-        .topbar {
-            background: #2c5364;
-            color: white;
-            padding: 15px;
-            font-size: 20px;
-            font-weight: bold;
-        }
+<style>
+:root {
+    --primary: #2563eb;
+    --bg-light: #f3f4f6;
+    --bg-dark: #0f172a;
+    --sidebar-dark: #111827;
+    --sidebar-light: #ffffff;
+    --card-dark: #1e293b;
+    --card-light: #ffffff;
+    --text-light: #111827;
+    --text-dark: #f8fafc;
+}
 
-        .container {
-            display: flex;
-            height: calc(100vh - 60px);
-        }
+* {
+    box-sizing: border-box;
+}
 
-        .sidebar {
-            width: 220px;
-            background: #203a43;
-            color: white;
-            padding-top: 20px;
-        }
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s ease;
+}
 
-        .sidebar a {
-            display: block;
-            color: white;
-            padding: 12px 20px;
-            text-decoration: none;
-        }
+/* LIGHT MODE */
+.light-mode {
+    background: var(--bg-light);
+    color: var(--text-light);
+}
 
-        .sidebar a:hover {
-            background: #2c5364;
-        }
+/* DARK MODE */
+.dark-mode {
+    background: var(--bg-dark);
+    color: var(--text-dark);
+}
 
-        .content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
+/* LAYOUT */
+.wrapper {
+    display: flex;
+    min-height: 100vh;
+}
 
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
+/* SIDEBAR */
+.sidebar {
+    width: 240px;
+    padding: 20px;
+    transition: 0.3s ease;
+}
 
-        .button {
-            display: block;
-            text-align: center;
-            background: #2c5364;
-            color: white;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 6px;
-            text-decoration: none;
-        }
+.light-mode .sidebar {
+    background: var(--sidebar-light);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+}
 
-        .button:hover {
-            background: #203a43;
-        }
+.dark-mode .sidebar {
+    background: var(--sidebar-dark);
+}
 
+.sidebar h2 {
+    margin-bottom: 30px;
+    font-size: 20px;
+}
 
-        input, select {
-            padding: 8px;
-            width: 100%;
-            margin-top: 5px;
-            margin-bottom: 10px;
-        }
-    </style>
+.sidebar a {
+    display: block;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.2s ease;
+}
+
+.light-mode .sidebar a {
+    color: #374151;
+}
+
+.dark-mode .sidebar a {
+    color: #d1d5db;
+}
+
+.sidebar a:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* CONTENT */
+.content {
+    flex: 1;
+    padding: 30px;
+}
+
+/* TOPBAR */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.toggle-btn {
+    cursor: pointer;
+    font-size: 18px;
+}
+
+/* CARD */
+.card {
+    padding: 25px;
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    transition: 0.3s ease;
+    animation: fadeIn 0.4s ease;
+}
+
+.light-mode .card {
+    background: var(--card-light);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+.dark-mode .card {
+    background: var(--card-dark);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* BUTTON */
+.btn {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(37,99,235,0.4);
+}
+
+/* INPUT */
+input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+
+.dark-mode input {
+    background: #334155;
+    border: 1px solid #475569;
+    color: white;
+}
+
+/* FLASH */
+.flash {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.flash-error {
+    background: #fecaca;
+    color: #7f1d1d;
+}
+
+.flash-success {
+    background: #bbf7d0;
+    color: #065f46;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from {opacity:0; transform: translateY(15px);}
+    to {opacity:1; transform: translateY(0);}
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+}
+</style>
 </head>
 
-<body>
+<body class="light-mode">
 
-<div class="topbar">
-    Spectra Sports POS
-</div>
+<div class="wrapper">
 
-<div class="container">
     <div class="sidebar">
+        <h2>Spectra Sports</h2>
         <a href="/dashboard">Dashboard</a>
-        <a href="/purchase">New Bill</a>
-        <a href="/add_customer">Add Customer</a>
-        <a href="/search">Search Customer</a>
-        <a href="/products">Manage Products</a>
+        <a href="/purchase">New Purchase</a>
+        <a href="/products">Products</a>
+        <a href="/feedback">Feedback</a>
+        <a href="/logout">Logout</a>
     </div>
 
     <div class="content">
+
+        <div class="topbar">
+            <h3>Enterprise POS</h3>
+            <span class="toggle-btn" onclick="toggleMode()">🌙</span>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash flash-{{category}}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
+
     </div>
+
 </div>
+
+<script>
+function toggleMode() {
+    const body = document.body;
+    body.classList.toggle("dark-mode");
+    body.classList.toggle("light-mode");
+
+    if(body.classList.contains("dark-mode")){
+        localStorage.setItem("theme","dark");
+    } else {
+        localStorage.setItem("theme","light");
+    }
+}
+
+window.onload = function(){
+    const saved = localStorage.getItem("theme");
+    if(saved === "dark"){
+        document.body.classList.remove("light-mode");
+        document.body.classList.add("dark-mode");
+    }
+}
+</script>
 
 </body>
 </html>

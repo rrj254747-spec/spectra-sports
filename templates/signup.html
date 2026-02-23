@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div style="max-width:400px;margin:60px auto;" class="card fade-in">
+
+<h2 style="text-align:center;">Create Account</h2>
+
+<form method="POST" onsubmit="return validateSignup()">
+
+    <label>Email</label>
+    <input type="email" id="email" name="email"
+           placeholder="Enter Your Email"
+           required>
+
+    <label>Password</label>
+    <div style="position:relative;">
+        <input type="password"
+               name="password"
+               id="password"
+               placeholder="Create Password"
+               required
+               minlength="6"
+               oninput="checkStrength()">
+
+        <span onclick="togglePassword()"
+              style="position:absolute;right:10px;top:10px;cursor:pointer;font-size:14px;">
+              👁
+        </span>
+    </div>
+
+    <div id="strength" style="font-size:13px;margin-bottom:15px;"></div>
+
+    <button type="submit"
+            class="btn"
+            style="width:100%;">
+        Create Account
+    </button>
+
+</form>
+
+<p style="text-align:center;margin-top:15px;">
+Already have account? <a href="/">Login</a>
+</p>
+
+</div>
+
+<style>
+.fade-in {
+    animation: fadeIn 0.4s ease-in-out;
+}
+@keyframes fadeIn {
+    from {opacity:0; transform:translateY(20px);}
+    to {opacity:1; transform:translateY(0);}
+}
+</style>
+
+<script>
+
+function validateSignup() {
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    if (!email) {
+        alert("Email is required");
+        return false;
+    }
+
+    if (!email.includes("@") || !email.includes(".")) {
+        alert("Enter valid email address");
+        return false;
+    }
+
+    if (!password) {
+        alert("Password is required");
+        return false;
+    }
+
+    if (password.length < 6) {
+        alert("Password must be at least 6 characters");
+        return false;
+    }
+
+    if (!/\d/.test(password)) {
+        alert("Password must contain at least one number");
+        return false;
+    }
+
+    return true;
+}
+
+function checkStrength() {
+    const pwd = document.getElementById("password").value;
+    const strength = document.getElementById("strength");
+
+    if (pwd.length < 6) {
+        strength.innerHTML = "Weak password";
+        strength.style.color = "red";
+    } else if (!/\d/.test(pwd)) {
+        strength.innerHTML = "Medium strength (add a number)";
+        strength.style.color = "orange";
+    } else if (pwd.length < 10) {
+        strength.innerHTML = "Good password";
+        strength.style.color = "blue";
+    } else {
+        strength.innerHTML = "Strong password";
+        strength.style.color = "green";
+    }
+}
+
+function togglePassword() {
+    const pwd = document.getElementById("password");
+    if (pwd.type === "password") {
+        pwd.type = "text";
+    } else {
+        pwd.type = "password";
+    }
+}
+
+</script>
+
+{% endblock %}
