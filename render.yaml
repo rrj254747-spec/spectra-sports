@@ -1,6 +1,15 @@
 services:
   - type: web
     name: spectra-sports
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    env: python
+    plan: free
+
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+
+      - key: SECRET_KEY
+        generateValue: true
