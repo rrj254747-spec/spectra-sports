@@ -16,7 +16,6 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 def get_connection():
     database_url = os.environ.get("DATABASE_URL")
 
-    # Production (Render PostgreSQL)
     if database_url:
         url = urlparse(database_url)
         return psycopg2.connect(
@@ -27,11 +26,9 @@ def get_connection():
             port=url.port
         )
 
-    # Local (SQLite)
-    else:
-        conn = sqlite3.connect("spectra.db")
-        conn.row_factory = sqlite3.Row
-        return conn
+    conn = sqlite3.connect("spectra.db")
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 # =========================
@@ -42,7 +39,8 @@ def init_db():
     c = conn.cursor()
 
     if os.environ.get("DATABASE_URL"):
-        # PostgreSQL syntax
+        # PostgreSQL
+
         c.execute("""
         CREATE TABLE IF NOT EXISTS staff (
             id SERIAL PRIMARY KEY,
@@ -88,7 +86,8 @@ def init_db():
         """)
 
     else:
-        # SQLite syntax
+        # SQLite
+
         c.execute("""
         CREATE TABLE IF NOT EXISTS staff (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,7 +140,7 @@ init_db()
 
 
 # =========================
-# LOGIN REQUIRED DECORATOR
+# LOGIN REQUIRED
 # =========================
 def login_required(f):
     @wraps(f)
@@ -157,19 +156,12 @@ def login_required(f):
 # =========================
 @app.route("/", methods=["GET", "POST"])
 def login():
-
     if request.method == "POST":
-
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "").strip()
 
-        # Backend validation
         if not email or not password:
             flash("All fields are required", "error")
-            return redirect("/")
-
-        if "@" not in email:
-            flash("Invalid email format", "error")
             return redirect("/")
 
         conn = get_connection()
@@ -203,27 +195,17 @@ def login():
 # =========================
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
-
     if request.method == "POST":
 
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "").strip()
 
-        # Backend validation
         if not email or not password:
             flash("All fields are required", "error")
             return redirect("/signup")
 
-        if "@" not in email or "." not in email:
-            flash("Invalid email format", "error")
-            return redirect("/signup")
-
         if len(password) < 6:
             flash("Password must be at least 6 characters", "error")
-            return redirect("/signup")
-
-        if not any(char.isdigit() for char in password):
-            flash("Password must contain at least one number", "error")
             return redirect("/signup")
 
         hashed = generate_password_hash(password)
@@ -242,9 +224,7 @@ def signup():
                     "INSERT INTO staff (email, password, role) VALUES (?, ?, ?)",
                     (email, hashed, "staff")
                 )
-
             conn.commit()
-
         except:
             flash("Email already registered", "error")
             conn.close()
@@ -257,9 +237,6 @@ def signup():
     return render_template("signup.html")
 
 
-# =========================
-# LOGOUT
-# =========================
 @app.route("/logout")
 def logout():
     session.clear()
@@ -267,23 +244,36 @@ def logout():
 
 
 # =========================
-# DASHBOARD (Keep Old Design)
+# DASHBOARD
 # =========================
 @app.route("/dashboard")
 @login_required
 def dashboard():
+
     conn = get_connection()
     c = conn.cursor()
 
-    if os.environ.get("DATABASE_URL"):
-        c.execute("SELECT id, name, price, stock FROM products")
-    else:
-        c.execute("SELECT id, name, price, stock FROM products")
-
+    c.execute("SELECT id, name, price, stock FROM products ORDER BY name ASC")
     products = c.fetchall()
+
+    if os.environ.get("DATABASE_URL"):
+        c.execute("SELECT COALESCE(SUM(total), 0) FROM purchases")
+    else:
+        c.execute("SELECT IFNULL(SUM(total), 0) FROM purchases")
+
+    total_sales = c.fetchone()[0] or 0
+
+    c.execute("SELECT COUNT(*) FROM staff")
+    total_users = c.fetchone()[0] or 0
+
     conn.close()
 
-    return render_template("dashboard.html", products=products)
+    return render_template(
+        "dashboard.html",
+        products=products,
+        total_sales=round(float(total_sales), 2),
+        total_users=total_users
+    )
 
 
 # =========================
@@ -313,124 +303,124 @@ def add_product():
     conn.commit()
     conn.close()
 
-    flash("Product added successfully")
+    flash("Product added successfully", "success")
     return redirect("/dashboard")
 
 
 # =========================
-# PURCHASE (Dynamic Infinite Billing + No Duplicate + Price Support)
+# PURCHASE PAGE (GET)
+# =========================
+@app.route("/purchase", methods=["GET"])
+@login_required
+def purchase_page():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, name, price, stock FROM products")
+    products = c.fetchall()
+    conn.close()
+    return render_template("purchase.html", products=products)
+
+
+# =========================
+# PURCHASE (POST)
 # =========================
 @app.route("/purchase", methods=["POST"])
 @login_required
 def purchase():
 
-    products = request.form.getlist("product[]")
-    prices = request.form.getlist("price[]")
-    qtys = request.form.getlist("qty[]")
-    grand_total = request.form.get("grand_total")
+    product_ids = request.form.getlist("product_id[]")
+    quantities = request.form.getlist("quantity[]")
 
-    selected = set()
-    total = 0
+    if not product_ids:
+        flash("No items selected", "error")
+        return redirect("/purchase")
 
     conn = get_connection()
     c = conn.cursor()
 
-    for i in range(len(products)):
+    total = 0
+    selected = set()
 
-        name = products[i]
-        qty = int(qtys[i])
-        price = float(prices[i])
+    for i in range(len(product_ids)):
 
-        # Prevent duplicate product in same bill
-        if name in selected:
-            flash("Duplicate product in bill")
+        product_id = product_ids[i]
+        qty = int(quantities[i])
+
+        if product_id in selected:
+            flash("Duplicate product not allowed", "error")
             conn.close()
-            return redirect("/dashboard")
+            return redirect("/purchase")
 
-        selected.add(name)
+        selected.add(product_id)
 
-        # Check stock from database
         if os.environ.get("DATABASE_URL"):
-            c.execute("SELECT stock FROM products WHERE name=%s", (name,))
+            c.execute("SELECT name, price, stock FROM products WHERE id=%s", (product_id,))
         else:
-            c.execute("SELECT stock FROM products WHERE name=?", (name,))
+            c.execute("SELECT name, price, stock FROM products WHERE id=?", (product_id,))
 
         product = c.fetchone()
 
         if not product:
-            flash(f"Product {name} not found")
+            flash("Product not found", "error")
             conn.close()
-            return redirect("/dashboard")
+            return redirect("/purchase")
 
-        stock = product[0]
+        name, price, stock = product
 
         if qty > stock:
-            flash(f"Not enough stock for {name}")
+            flash(f"Not enough stock for {name}", "error")
             conn.close()
-            return redirect("/dashboard")
+            return redirect("/purchase")
 
-        # Calculate row total
-        row_total = price * qty
-        total += row_total
+        total += float(price) * qty
 
-        # Reduce stock
         if os.environ.get("DATABASE_URL"):
-            c.execute(
-                "UPDATE products SET stock = stock - %s WHERE name=%s",
-                (qty, name)
-            )
+            c.execute("UPDATE products SET stock = stock - %s WHERE id=%s", (qty, product_id))
         else:
-            c.execute(
-                "UPDATE products SET stock = stock - ? WHERE name=?",
-                (qty, name)
-            )
+            c.execute("UPDATE products SET stock = stock - ? WHERE id=?", (qty, product_id))
 
-    # Insert purchase summary
     if os.environ.get("DATABASE_URL"):
-        c.execute(
-            "INSERT INTO purchases (total, date) VALUES (%s, NOW())",
-            (total,)
-        )
+        c.execute("INSERT INTO purchases (total) VALUES (%s)", (total,))
     else:
-        c.execute(
-            "INSERT INTO purchases (total, date) VALUES (?, datetime('now'))",
-            (total,)
-        )
+        c.execute("INSERT INTO purchases (total, date) VALUES (?, datetime('now'))", (total,))
 
     conn.commit()
     conn.close()
 
-    flash("Purchase completed successfully")
+    flash("Purchase completed successfully", "success")
     return redirect("/dashboard")
+
 
 # =========================
 # FEEDBACK
 # =========================
-@app.route("/feedback", methods=["POST"])
+@app.route("/feedback", methods=["GET", "POST"])
 @login_required
 def feedback():
-    name = request.form["name"]
-    message = request.form["message"]
 
-    conn = get_connection()
-    c = conn.cursor()
+    if request.method == "POST":
+        name = request.form.get("name")
+        message = request.form.get("message")
 
-    if os.environ.get("DATABASE_URL"):
-        c.execute(
-            "INSERT INTO feedback (name, message) VALUES (%s, %s)",
-            (name, message)
-        )
-    else:
-        c.execute(
-            "INSERT INTO feedback (name, message) VALUES (?, ?)",
-            (name, message)
-        )
+        if not name or not message:
+            flash("All fields are required", "error")
+            return redirect("/feedback")
 
-    conn.commit()
-    conn.close()
+        conn = get_connection()
+        c = conn.cursor()
 
-    flash("Feedback submitted")
-    return redirect("/dashboard")
+        if os.environ.get("DATABASE_URL"):
+            c.execute("INSERT INTO feedback (name, message) VALUES (%s, %s)", (name, message))
+        else:
+            c.execute("INSERT INTO feedback (name, message) VALUES (?, ?)", (name, message))
+
+        conn.commit()
+        conn.close()
+
+        flash("Feedback submitted successfully", "success")
+        return redirect("/feedback")
+
+    return render_template("feedback.html")
 
 
 if __name__ == "__main__":

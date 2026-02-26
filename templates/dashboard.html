@@ -1,57 +1,223 @@
-<div class="card">
-    <h2>Smart Billing</h2>
+{% extends "layout.html" %}
+{% block content %}
 
-    <form method="POST" action="/purchase" id="billForm">
-        <div id="items"></div>
+<div class="container">
 
-        <button type="button" onclick="addItem()">Add Item</button>
+    <!-- ===================== -->
+    <!-- SMART BILLING -->
+    <!-- ===================== -->
+    <div class="card">
+        <h2>🧾 Smart Billing</h2>
 
-        <h3>Grand Total: ₹ <span id="grandTotal">0</span></h3>
+        <form method="POST" action="/purchase" id="billForm">
+            <div id="items"></div>
 
-        <button type="submit">Complete Purchase</button>
-    </form>
+            <button type="button" class="btn secondary" onclick="addItem()">
+                + Add Item
+            </button>
+
+            <h3 class="total">
+                Grand Total: ₹ <span id="grandTotal">0.00</span>
+            </h3>
+
+            <button type="submit" class="btn primary">
+                Complete Purchase
+            </button>
+        </form>
+    </div>
+
+    <!-- ===================== -->
+    <!-- ANALYTICS -->
+    <!-- ===================== -->
+    <div class="analytics-grid">
+
+        <div class="card analytics-card">
+            <h3>Total Sales</h3>
+            <p class="big">₹ {{ total_sales or 0 }}</p>
+        </div>
+
+        <div class="card analytics-card">
+            <h3>Total Users</h3>
+            <p class="big">{{ total_users or 0 }}</p>
+        </div>
+
+        <div class="card analytics-card">
+            <h3>Total Products</h3>
+            <p class="big">{{ products|length }}</p>
+        </div>
+
+    </div>
+
 </div>
-<div class="card">
-<h2>Analytics</h2>
-<p>Total Sales: ₹ {{ total_sales }}</p>
-<p>Total Users: {{ total_users }}</p>
-</div>
+
+<!-- ===================== -->
+<!-- BILLING SCRIPT -->
+<!-- ===================== -->
 <script>
-let products = {{ products|tojson }};
+
+let products = {{ products | tojson | safe }};
 
 function addItem() {
+
+    const container = document.getElementById("items");
     const div = document.createElement("div");
     div.className = "row";
 
     let options = `<option value="">Select Product</option>`;
+
     products.forEach(p => {
-        options += `<option value="${p[0]}" data-price="${p[2]}">${p[1]} (Stock: ${p[3]})</option>`;
+        options += `
+            <option value="${p[0]}" data-price="${p[2]}" data-stock="${p[3]}">
+                ${p[1]} (₹${p[2]} | Stock: ${p[3]})
+            </option>
+        `;
     });
 
     div.innerHTML = `
         <select name="product_id[]" onchange="calculateTotal()" required>
             ${options}
         </select>
-        <input type="number" name="quantity[]" min="1" value="1" onchange="calculateTotal()" required>
-        <button type="button" onclick="this.parentElement.remove(); calculateTotal()">X</button>
+
+        <input type="number"
+               name="quantity[]"
+               min="1"
+               value="1"
+               onchange="calculateTotal()"
+               required>
+
+        <button type="button" onclick="removeRow(this)">
+            ✖
+        </button>
     `;
 
-    document.getElementById("items").appendChild(div);
+    container.appendChild(div);
+}
+
+function removeRow(button) {
+    button.parentElement.remove();
+    calculateTotal();
 }
 
 function calculateTotal() {
+
     let total = 0;
+    let selectedProducts = new Set();
+    let duplicateFound = false;
 
     document.querySelectorAll("#items .row").forEach(row => {
-        const select = row.querySelector("select");
-        const qty = row.querySelector("input");
 
-        if (select.selectedOptions[0]) {
-            const price = parseFloat(select.selectedOptions[0].dataset.price || 0);
-            total += price * parseInt(qty.value || 0);
+        const select = row.querySelector("select");
+        const qtyInput = row.querySelector("input");
+
+        if (!select.value) return;
+
+        if (selectedProducts.has(select.value)) {
+            duplicateFound = true;
         }
+
+        selectedProducts.add(select.value);
+
+        const selectedOption = select.selectedOptions[0];
+
+        if (!selectedOption.dataset.price) return;
+
+        const price = parseFloat(selectedOption.dataset.price);
+        const stock = parseInt(selectedOption.dataset.stock);
+        const qty = parseInt(qtyInput.value);
+
+        if (qty > stock) {
+            alert("Not enough stock for " + selectedOption.text);
+            qtyInput.value = 1;
+            return;
+        }
+
+        total += price * qty;
     });
+
+    if (duplicateFound) {
+        alert("Duplicate product not allowed in same bill.");
+    }
 
     document.getElementById("grandTotal").innerText = total.toFixed(2);
 }
+
+// Auto add first row on page load
+window.onload = function(){
+    if(products.length > 0){
+        addItem();
+    }
+};
+
 </script>
+
+<!-- ===================== -->
+<!-- STYLING -->
+<!-- ===================== -->
+<style>
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 30px;
+}
+
+.card {
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.analytics-card {
+    text-align: center;
+}
+
+.big {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+select, input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    border: none;
+}
+
+.btn {
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.primary {
+    background: #4cafef;
+    color: white;
+}
+
+.secondary {
+    background: #444;
+    color: white;
+}
+
+.total {
+    margin-top: 15px;
+}
+
+</style>
+
+{% endblock %}

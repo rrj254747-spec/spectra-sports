@@ -1,227 +1,217 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spectra Sports POS</title>
+    <title>Spectra Sports POS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --sidebar-dark: #0b132b;
+            --card-dark: #1e293b;
+            --text-dark: #f1f5f9;
 
-<style>
-:root {
-    --primary: #2563eb;
-    --bg-light: #f3f4f6;
-    --bg-dark: #0f172a;
-    --sidebar-dark: #111827;
-    --sidebar-light: #ffffff;
-    --card-dark: #1e293b;
-    --card-light: #ffffff;
-    --text-light: #111827;
-    --text-dark: #f8fafc;
-}
+            --bg-light: #f4f6f9;
+            --sidebar-light: #ffffff;
+            --card-light: #ffffff;
+            --text-light: #111827;
 
-* {
-    box-sizing: border-box;
-}
+            --primary: #3b82f6;
+        }
 
-body {
-    margin: 0;
-    font-family: 'Inter', sans-serif;
-    transition: all 0.3s ease;
-}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
 
-/* LIGHT MODE */
-.light-mode {
-    background: var(--bg-light);
-    color: var(--text-light);
-}
+        body {
+            transition: background 0.3s ease, color 0.3s ease;
+        }
 
-/* DARK MODE */
-.dark-mode {
-    background: var(--bg-dark);
-    color: var(--text-dark);
-}
+        body.dark {
+            background: var(--bg-dark);
+            color: var(--text-dark);
+        }
 
-/* LAYOUT */
-.wrapper {
-    display: flex;
-    min-height: 100vh;
-}
+        body.light {
+            background: var(--bg-light);
+            color: var(--text-light);
+        }
 
-/* SIDEBAR */
-.sidebar {
-    width: 240px;
-    padding: 20px;
-    transition: 0.3s ease;
-}
+        .wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
 
-.light-mode .sidebar {
-    background: var(--sidebar-light);
-    box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-}
+        /* SIDEBAR */
+        .sidebar {
+            width: 230px;
+            padding: 30px 20px;
+            transition: background 0.3s ease;
+        }
 
-.dark-mode .sidebar {
-    background: var(--sidebar-dark);
-}
+        body.dark .sidebar {
+            background: var(--sidebar-dark);
+        }
 
-.sidebar h2 {
-    margin-bottom: 30px;
-    font-size: 20px;
-}
+        body.light .sidebar {
+            background: var(--sidebar-light);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
 
-.sidebar a {
-    display: block;
-    padding: 12px;
-    margin-bottom: 8px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 500;
-    transition: 0.2s ease;
-}
+        .sidebar h2 {
+            margin-bottom: 40px;
+        }
 
-.light-mode .sidebar a {
-    color: #374151;
-}
+        .sidebar a {
+            display: block;
+            text-decoration: none;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            transition: 0.2s;
+        }
 
-.dark-mode .sidebar a {
-    color: #d1d5db;
-}
+        body.dark .sidebar a {
+            color: #cbd5e1;
+        }
 
-.sidebar a:hover {
-    background: var(--primary);
-    color: white;
-}
+        body.light .sidebar a {
+            color: #374151;
+        }
 
-/* CONTENT */
-.content {
-    flex: 1;
-    padding: 30px;
-}
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: var(--primary);
+            color: white !important;
+        }
 
-/* TOPBAR */
-.topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
+        /* CONTENT */
+        .content {
+            flex: 1;
+            padding: 40px;
+        }
 
-.toggle-btn {
-    cursor: pointer;
-    font-size: 18px;
-}
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
 
-/* CARD */
-.card {
-    padding: 25px;
-    border-radius: 14px;
-    backdrop-filter: blur(10px);
-    transition: 0.3s ease;
-    animation: fadeIn 0.4s ease;
-}
+        .toggle-btn {
+            cursor: pointer;
+            font-size: 18px;
+        }
 
-.light-mode .card {
-    background: var(--card-light);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
+        .card {
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
 
-.dark-mode .card {
-    background: var(--card-dark);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-}
+        body.dark .card {
+            background: var(--card-dark);
+        }
 
-/* BUTTON */
-.btn {
-    padding: 10px 18px;
-    border-radius: 8px;
-    border: none;
-    background: var(--primary);
-    color: white;
-    cursor: pointer;
-    transition: 0.2s ease;
-}
+        body.light .card {
+            background: var(--card-light);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
 
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(37,99,235,0.4);
-}
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: none;
+            background: #334155;
+            color: white;
+        }
 
-/* INPUT */
-input {
-    width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    margin-bottom: 15px;
-}
+        body.light input,
+        body.light select,
+        body.light textarea {
+            background: #f1f5f9;
+            color: #111827;
+        }
 
-.dark-mode input {
-    background: #334155;
-    border: 1px solid #475569;
-    color: white;
-}
+        button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+        }
 
-/* FLASH */
-.flash {
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    font-size: 14px;
-}
+        button:hover {
+            opacity: 0.9;
+        }
 
-.flash-error {
-    background: #fecaca;
-    color: #7f1d1d;
-}
+        .flash {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
 
-.flash-success {
-    background: #bbf7d0;
-    color: #065f46;
-}
+        .flash-error {
+            background: #7f1d1d;
+            color: white;
+        }
 
-/* ANIMATION */
-@keyframes fadeIn {
-    from {opacity:0; transform: translateY(15px);}
-    to {opacity:1; transform: translateY(0);}
-}
+        .flash-success {
+            background: #14532d;
+            color: white;
+        }
 
-/* MOBILE */
-@media (max-width: 768px) {
-    .sidebar {
-        display: none;
-    }
-}
-</style>
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(10px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        /* Mobile */
+        @media(max-width: 768px){
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
 </head>
 
-<body class="light-mode">
-
+<body class="dark">
 <div class="wrapper">
 
     <div class="sidebar">
         <h2>Spectra Sports</h2>
-        <a href="/dashboard">Dashboard</a>
-        <a href="/purchase">New Purchase</a>
-        <a href="/products">Products</a>
-        <a href="/feedback">Feedback</a>
-        <a href="/logout">Logout</a>
+
+        {% if session.get("user") %}
+            <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">Dashboard</a>
+            <a href="/purchase" class="{% if request.path == '/purchase' %}active{% endif %}">New Purchase</a>
+            <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">Products</a>
+            <a href="/feedback" class="{% if request.path == '/feedback' %}active{% endif %}">Feedback</a>
+            <a href="/logout">Logout</a>
+        {% endif %}
     </div>
 
     <div class="content">
 
         <div class="topbar">
-            <h3>Enterprise POS</h3>
-            <span class="toggle-btn" onclick="toggleMode()">🌙</span>
+            <h1>Enterprise POS</h1>
+            <span class="toggle-btn" onclick="toggleTheme()">🌙</span>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash flash-{{category}}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
@@ -231,23 +221,24 @@ input {
 </div>
 
 <script>
-function toggleMode() {
+function toggleTheme(){
     const body = document.body;
-    body.classList.toggle("dark-mode");
-    body.classList.toggle("light-mode");
-
-    if(body.classList.contains("dark-mode")){
-        localStorage.setItem("theme","dark");
+    if(body.classList.contains("dark")){
+        body.classList.remove("dark");
+        body.classList.add("light");
+        localStorage.setItem("theme", "light");
     } else {
-        localStorage.setItem("theme","light");
+        body.classList.remove("light");
+        body.classList.add("dark");
+        localStorage.setItem("theme", "dark");
     }
 }
 
 window.onload = function(){
-    const saved = localStorage.getItem("theme");
-    if(saved === "dark"){
-        document.body.classList.remove("light-mode");
-        document.body.classList.add("dark-mode");
+    const savedTheme = localStorage.getItem("theme");
+    if(savedTheme === "light"){
+        document.body.classList.remove("dark");
+        document.body.classList.add("light");
     }
 }
 </script>

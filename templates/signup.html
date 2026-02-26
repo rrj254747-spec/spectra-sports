@@ -1,53 +1,85 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<div style="max-width:400px;margin:60px auto;" class="card fade-in">
+<div class="card signup-card">
 
-<h2 style="text-align:center;">Create Account</h2>
+    <h2 class="signup-title">Create Account</h2>
 
-<form method="POST" onsubmit="return validateSignup()">
+    <form method="POST" onsubmit="return validateSignup()">
 
-    <label>Email</label>
-    <input type="email" id="email" name="email"
-           placeholder="Enter Your Email"
-           required>
+        <label>Email</label>
+        <input type="email"
+               id="email"
+               name="email"
+               placeholder="Enter Your Email"
+               required>
 
-    <label>Password</label>
-    <div style="position:relative;">
-        <input type="password"
-               name="password"
-               id="password"
-               placeholder="Create Password"
-               required
-               minlength="6"
-               oninput="checkStrength()">
+        <label>Password</label>
+        <div class="password-wrapper">
+            <input type="password"
+                   name="password"
+                   id="password"
+                   placeholder="Create Password"
+                   required
+                   minlength="6"
+                   oninput="checkStrength()">
 
-        <span onclick="togglePassword()"
-              style="position:absolute;right:10px;top:10px;cursor:pointer;font-size:14px;">
-              👁
-        </span>
-    </div>
+            <span onclick="togglePassword()" class="eye-toggle">👁</span>
+        </div>
 
-    <div id="strength" style="font-size:13px;margin-bottom:15px;"></div>
+        <div id="strength" class="password-strength"></div>
 
-    <button type="submit"
-            class="btn"
-            style="width:100%;">
-        Create Account
-    </button>
+        <button type="submit" class="btn-signup">
+            Create Account
+        </button>
 
-</form>
+    </form>
 
-<p style="text-align:center;margin-top:15px;">
-Already have account? <a href="/">Login</a>
-</p>
+    <p class="login-text">
+        Already have an account? <a href="/">Login</a>
+    </p>
 
 </div>
 
 <style>
-.fade-in {
+.signup-card {
+    max-width: 420px;
+    margin: 60px auto;
     animation: fadeIn 0.4s ease-in-out;
 }
+
+.signup-title {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.eye-toggle {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.password-strength {
+    font-size: 13px;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.btn-signup {
+    width: 100%;
+}
+
+.login-text {
+    text-align: center;
+    margin-top: 20px;
+}
+
 @keyframes fadeIn {
     from {opacity:0; transform:translateY(20px);}
     to {opacity:1; transform:translateY(0);}
@@ -55,7 +87,6 @@ Already have account? <a href="/">Login</a>
 </style>
 
 <script>
-
 function validateSignup() {
 
     const email = document.getElementById("email").value.trim();
@@ -101,7 +132,7 @@ function checkStrength() {
         strength.style.color = "orange";
     } else if (pwd.length < 10) {
         strength.innerHTML = "Good password";
-        strength.style.color = "blue";
+        strength.style.color = "#3b82f6";
     } else {
         strength.innerHTML = "Strong password";
         strength.style.color = "green";
@@ -110,13 +141,8 @@ function checkStrength() {
 
 function togglePassword() {
     const pwd = document.getElementById("password");
-    if (pwd.type === "password") {
-        pwd.type = "text";
-    } else {
-        pwd.type = "password";
-    }
+    pwd.type = pwd.type === "password" ? "text" : "password";
 }
-
 </script>
 
 {% endblock %}

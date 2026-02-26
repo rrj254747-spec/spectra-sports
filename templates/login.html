@@ -1,38 +1,69 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<div class="card" style="max-width:400px;margin:60px auto;">
+<div class="card login-card">
 
-<h2 style="text-align:center;">Login</h2>
+    <h2 class="login-title">Login</h2>
 
-<form method="POST" onsubmit="return validateLogin()">
+    <form method="POST" onsubmit="return validateLogin()">
 
-    <label>Email</label>
-    <input type="email" id="email" name="email" required>
+        <label>Email</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" required>
 
-    <label>Password</label>
-    <div style="position:relative;">
-        <input type="password" id="password" name="password" required minlength="6">
-        <span onclick="togglePassword()" 
-              style="position:absolute;right:10px;top:10px;cursor:pointer;font-size:14px;">
-              👁
-        </span>
-    </div>
+        <label>Password</label>
+        <div class="password-wrapper">
+            <input type="password" id="password" name="password" placeholder="Enter your password" required minlength="6">
+            <span onclick="togglePassword()" class="eye-toggle">👁</span>
+        </div>
 
-    <button type="submit" class="btn" style="width:100%;margin-top:15px;">
-        Login
-    </button>
+        <button type="submit" class="btn-login">
+            Login
+        </button>
 
-</form>
+    </form>
 
-<p style="text-align:center;margin-top:15px;">
-    Don't have account? <a href="/signup">Sign Up</a>
-</p>
+    <p class="signup-text">
+        Don't have an account? <a href="/signup">Sign Up</a>
+    </p>
 
 </div>
 
-<script>
+<style>
+.login-card {
+    max-width: 420px;
+    margin: 60px auto;
+    animation: fadeIn 0.4s ease;
+}
 
+.login-title {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.eye-toggle {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-login {
+    width: 100%;
+    margin-top: 15px;
+}
+
+.signup-text {
+    text-align: center;
+    margin-top: 20px;
+}
+</style>
+
+<script>
 function validateLogin() {
 
     const email = document.getElementById("email").value.trim();
@@ -44,7 +75,7 @@ function validateLogin() {
     }
 
     if (!email.includes("@") || !email.includes(".")) {
-        alert("Enter valid email address");
+        alert("Enter a valid email address");
         return false;
     }
 
@@ -63,13 +94,8 @@ function validateLogin() {
 
 function togglePassword() {
     const pwd = document.getElementById("password");
-    if (pwd.type === "password") {
-        pwd.type = "text";
-    } else {
-        pwd.type = "password";
-    }
+    pwd.type = pwd.type === "password" ? "text" : "password";
 }
-
 </script>
 
 {% endblock %}
